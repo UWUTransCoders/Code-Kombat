@@ -1,47 +1,123 @@
-import robocode.AlphaBot;
-import robocode.ScannedRobotEvent;
+/*
+ * 
+ *  state 
+ *  0 - initial  - Wall
+ *  1 - low energy
+ * */
 
-public class TransCoders extends AlphaBot {
+
+
+import robocode.AlphaBot;
+import robocode.BulletHitEvent;
+import robocode.HitRobotEvent;
+import robocode.ScannedRobotEvent;
+import java.awt.*;
+
+public class  TransCoders extends AlphaBot {
+
+	boolean peek; // Don't turn if there's a robot there
+	double moveAmount; // How much to move
+	int state = 0;
 	
-	double energy = 0;
+	/*============= check state =============== */
+	public void checkState() {
+		if(getEnergy() < 50) {
+			state = 1;
+		}
+	}
 	
-	@Override
+	
+
+	/**
+	 * run: Move around the walls
+	 */
 	public void run() {
-		while(true) {
-			energy = getEnergy();
-			System.out.println(energy);
+		// Set colors
+		setBodyColor(Color.red);
+		setGunColor(Color.red);
+		setRadarColor(Color.red);
+		setBulletColor(Color.red);
+		setScanColor(Color.red);
+
+		// Initialize moveAmount to the maximum possible for this battlefield.
+		moveAmount = Math.max(getBattleFieldWidth(), getBattleFieldHeight());
+		// Initialize peek to false
+		peek = false;
+
+		// turnLeft to face a wall.
+		// getHeading() % 90 means the remainder of
+		// getHeading() divided by 90.
+		turnLeft(getHeading() % 90);
+		ahead(moveAmount);
+		// Turn the gun to turn right 90 degrees.
+		peek = true;
+		turnGunRight(90);
+		turnRight(90);
+
+		while (true) {
+			//checkState();
 			
-			if(energy > 50) {
-				ahead(100);
-				back(100);
-				turnGunLeft(360);
-				scan();
+			if(state == 0) {
+				/* ============== WALL =========== */
+				// Look before we turn when ahead() completes.
+				peek = true;
+				// Move up the wall
+				ahead(moveAmount);
+				// Don't look now
+				peek = false;
+				// Turn to the next wall
+				turnRight(90);
+				/* ============== WALL =========== */
 			}
 			else {
-				turnGunLeft(180);
-				ahead(500);
-				back(500);
-				turnGunLeft(180);
-				scan();
+				/* ============== BATTLE =========== */
+				ahead(100);
+				turnRight(90);
+				back(100);
+				/* ============== BATTLE =========== */
 			}
-			
 		}
 	}
 
+	/**
+	 * onHitRobot:  Move away a bit.
+	 */
+	public void onHitRobot(HitRobotEvent e) {
+		//if(state == 0) {
+			/* ============== WALL =========== */
+			
+			// If he's in front of us, set back up a bit.
+			if (e.getBearing() > -90 && e.getBearing() < 90) {
+				back(100);
+			} // else he's in back of us, so set ahead a bit.
+			else {
+				ahead(100);
+			}
+			/* ============== WALL =========== */
+		//}
+	}
+
+	/**
+	 * onScannedRobot:  Fire!
+	 */
+	public void onScannedRobot(ScannedRobotEvent e) {
+		//if(state == 0) {
+			/* ============== WALL =========== */
+			fire(2);
+			// Note that scan is called automatically when the robot is moving.
+			// By calling it manually here, we make sure we generate another scan event if there's a robot on the next
+			// wall, so that we do not start moving up it until it's gone.
+			if (peek) {
+				scan();
+			}
+			/* ============== WALL =========== */
+		//}
+	}
+
 	@Override
-	public void onScannedRobot(ScannedRobotEvent event) {
-		double power = 10 - event.getDistance() % 10;
-		fireBullet(power);
+	public void onBulletHit(BulletHitEvent event) {
+		//state = 0;
 	}
 	
 	
-	
-	
-	
-	
-	
-	
 }
-
-
-
