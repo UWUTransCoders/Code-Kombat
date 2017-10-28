@@ -7,24 +7,34 @@
 
 
 
-import robocode.AlphaBot;
-import robocode.BravoBot;
+
 import robocode.BulletHitEvent;
+import robocode.CharlieBot;
 import robocode.HitRobotEvent;
 import robocode.ScannedRobotEvent;
 import java.awt.*;
 
-public class  TransCoders extends BravoBot {
+public class  TransCoders extends CharlieBot {
 
 	boolean peek; // Don't turn if there's a robot there
 	double moveAmount; // How much to move
-	int state = 0;
+	int state = 1;
 	
 	/*============= check state =============== */
 	public void checkState() {
-		if(getEnergy() < 50) {
+		out.println(state);
+		if(getEnergy() < 80 && getOthers() > 5) {
 			state = 1;
+			turnLeft(getHeading() % 90);
+			ahead(moveAmount);
 		}
+		else if(getEnergy() < 80 && getOthers() < 5) {
+			state = 0;
+		}
+		else {
+			state = 0;
+		}
+		
 	}
 	
 	
@@ -34,8 +44,8 @@ public class  TransCoders extends BravoBot {
 	 */
 	public void run() {
 		// Set colors
-		setBodyColor(Color.red);
-		setGunColor(Color.red);
+		setBodyColor(Color.BLACK);
+		setGunColor(Color.BLACK);
 		setRadarColor(Color.red);
 		setBulletColor(Color.red);
 		setScanColor(Color.red);
@@ -56,7 +66,7 @@ public class  TransCoders extends BravoBot {
 		turnRight(90);
 
 		while (true) {
-			//checkState();
+			checkState();
 			
 			if(state == 0) {
 				/* ============== WALL =========== */
@@ -70,10 +80,10 @@ public class  TransCoders extends BravoBot {
 				turnRight(90);
 				/* ============== WALL =========== */
 			}
-			else {
+			else if(state == 1) {
 				/* ============== BATTLE =========== */
 				ahead(100);
-				turnRight(90);
+				turnRight(360);
 				back(100);
 				/* ============== BATTLE =========== */
 			}
@@ -84,7 +94,7 @@ public class  TransCoders extends BravoBot {
 	 * onHitRobot:  Move away a bit.
 	 */
 	public void onHitRobot(HitRobotEvent e) {
-		//if(state == 0) {
+		if(state == 0) {
 			/* ============== WALL =========== */
 			
 			// If he's in front of us, set back up a bit.
@@ -95,16 +105,22 @@ public class  TransCoders extends BravoBot {
 				ahead(100);
 			}
 			/* ============== WALL =========== */
-		//}
+		}
+		else if(state == 1) {
+			if (e.getBearing() > -10 && e.getBearing() < 10) {
+				fire(2);
+			}
+			if (e.isMyFault()) {
+				turnRight(10);
+			}
+		}
 	}
 
-	/**
-	 * onScannedRobot:  Fire!
-	 */
-	public void onScannedRobot(ScannedRobotEvent e) {
-		//if(state == 0) {
-			/* ============== WALL =========== */
-			fire(2);
+	@Override
+	public void onRobotDetected(ScannedRobotEvent event) {
+		if(state == 0) {
+			int power = (int) Math.abs(20 - event.getDistance() % 10) + 1;
+			fire(power);
 			//smartFire(e.getDistance());
 			// Note that scan is called automatically when the robot is moving.
 			// By calling it manually here, we make sure we generate another scan event if there's a robot on the next
@@ -112,28 +128,48 @@ public class  TransCoders extends BravoBot {
 			if (peek) {
 				scan();
 			}
-			/* ============== WALL =========== */
-		//}
+		}
+		else if(state == 1) {
+			if (event.getBearing() > -10 && event.getBearing() < 10) {
+				fire(3);
+			}
+
+		}
 	}
+
+
+
+	/**
+	 * onScannedRobot:  Fire!
+	 */
+
 
 	@Override
 	public void onBulletHit(BulletHitEvent event) {
 		//back(100);
-		if(getOthers() < 7) {
+		if(state == 0) {
+			if(getEnergy() < event.getEnergy() + 20) {
+				turnLeft(getHeading() % 180);
+				ahead(moveAmount);
+			}
+		}
+		else if(state == 1) {
+			if(getEnergy() < 40) {
+				state = 0;
+			}
+			else {
+				back(50);
+				turnRight(90);
+				ahead(moveAmount);
+			}
+		}
+		/*if(getOthers() < 7) {
 			turnRight(90);
 			ahead(moveAmount);
-		}
+		}*/
 	}
 	
-	public void smartFire(double robotDistance) {
-		if (robotDistance > 200 || getEnergy() < 15) {
-			fire(1);
-		} else if (robotDistance > 50) {
-			fire(2);
-		} else {
-			fire(3);
-		}
-	}
+
 	
 	
 }
