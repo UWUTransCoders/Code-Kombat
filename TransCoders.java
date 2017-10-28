@@ -8,12 +8,13 @@
 
 
 import robocode.AlphaBot;
+import robocode.BravoBot;
 import robocode.BulletHitEvent;
 import robocode.HitRobotEvent;
 import robocode.ScannedRobotEvent;
 import java.awt.*;
 
-public class  TransCoders extends AlphaBot {
+public class  TransCoders extends BravoBot {
 
 	boolean peek; // Don't turn if there's a robot there
 	double moveAmount; // How much to move
@@ -51,7 +52,7 @@ public class  TransCoders extends AlphaBot {
 		ahead(moveAmount);
 		// Turn the gun to turn right 90 degrees.
 		peek = true;
-		turnGunRight(90);
+		turnRight(90);
 		turnRight(90);
 
 		while (true) {
@@ -104,6 +105,7 @@ public class  TransCoders extends AlphaBot {
 		//if(state == 0) {
 			/* ============== WALL =========== */
 			fire(2);
+			//smartFire(e.getDistance());
 			// Note that scan is called automatically when the robot is moving.
 			// By calling it manually here, we make sure we generate another scan event if there's a robot on the next
 			// wall, so that we do not start moving up it until it's gone.
@@ -116,7 +118,21 @@ public class  TransCoders extends AlphaBot {
 
 	@Override
 	public void onBulletHit(BulletHitEvent event) {
-		//state = 0;
+		//back(100);
+		if(getOthers() < 7) {
+			turnRight(90);
+			ahead(moveAmount);
+		}
+	}
+	
+	public void smartFire(double robotDistance) {
+		if (robotDistance > 200 || getEnergy() < 15) {
+			fire(1);
+		} else if (robotDistance > 50) {
+			fire(2);
+		} else {
+			fire(3);
+		}
 	}
 	
 	
